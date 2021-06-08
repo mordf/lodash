@@ -1,0 +1,31 @@
+ame: Node.js CI
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm cit
+    
+    - name: Synopsys Detect Rescan
+      run: >
+        curl -s -L https://raw.github.com/blackducksoftware/detect_rescan/dev/detect_rescan.sh > detect_rescan.sh;
+        export BLACKDUCK_URL=${{ secrets.BLACKDUCK_URL }};
+        export BLACKDUCK_API_TOKEN=${{ secrets.BLACKDUCK_API_TOKEN }};
+        bash <(curl -s -L https://detect.synopsys.com/detect.sh) --detect.project.name=lodash --detect.project.version.name=1.0.0
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v2
+      with:
+        report_paths: '**/policies.xml'
+        github_token: ${{ secrets.BD_TOKEN }}
